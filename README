@@ -1,1 +1,2 @@
+check_chinese_id.py	Validate a People's Republic of China identity card number according to the validation rules.
 ndjson2csv.py	Convert an NDJSON file to CSV format for analysis with office-like software.
