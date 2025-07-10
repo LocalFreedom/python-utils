@@ -33,8 +33,8 @@ def extra_imports(file_path:str) -> set:
 
 	return imports
 
-def extra_all_imports(project_path:str, ignore_dirs:list=None, follow_links:bool=True, ignore_error:bool=False) -> set:
-	all_imports = set()
+def extra_all_imports(project_path:str, ignore_dirs:list=None, follow_links:bool=True, ignore_error:bool=False) -> [dict, set]:
+	all_imports = {}
 	current_packages = set()
 
 	for root, dirs, files in os.walk(project_path, topdown=True, followlinks=follow_links):
@@ -54,29 +54,31 @@ def extra_all_imports(project_path:str, ignore_dirs:list=None, follow_links:bool
 					else:
 						logging.error("Failed on file: %s" % file_name)
 						raise e
-				all_imports.update(imports)
+				for item in imports:
+					all_imports[item] = all_imports.get(item, set())
+					all_imports[item].add(file_path)
 				current_packages.add(os.path.splitext(fn)[0])
 	return all_imports, current_packages
 
 def is_stdlib(module_name:str) -> bool:
 	return module_name in sys.stdlib_module_names
 
-def classify_imports(project_path:str, ignore_dirs=None, follow_links=True, ignore_error=False):
+def classify_imports(project_path:str, ignore_dirs=None, follow_links=True, ignore_error=False) -> [set, set, dict]:
 	all_imports, current_packages = extra_all_imports(project_path, ignore_dirs=ignore_dirs, follow_links=follow_links, ignore_error=ignore_error)
 	imports_std = set()
 	imports_self = set()
-	imports_third = set()
+	imports_third = {}
 	for module_name in all_imports:
 		if is_stdlib(module_name):
 			imports_std.add(module_name)
 		elif module_name in current_packages:
 			imports_self.add(module_name)
 		else:
-			imports_third.add(module_name)
+			imports_third[module_name] = all_imports[module_name]
 	return imports_std, imports_self, imports_third
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description="Analyze a Python project, extract all imported packages, list the package names, and classify them into standard libraries, self-contained, and third-party libraries.")
+	parser = argparse.ArgumentParser(description="Analyze a Python project, extract all imported packages, list the package names, and classify them into standard libraries, self-contained, and third-party packages.")
 	parser.add_argument("Project", type=str, help="The Python project root path.")
 	default_ignore_dirs = [
 		".hg",
@@ -92,9 +94,15 @@ if __name__ == '__main__':
 	parser.add_argument("-i", "--ignore-dirs", action="extend", nargs="*", default=default_ignore_dirs, type=str, help="The folder names to be ignored in the project.", metavar="Folder")
 	parser.add_argument("-l", "--follow-links", action="store_true", help="Follow the symbolic link in the project folder.")
 	parser.add_argument("-e", "--ignore-error", action="store_true", help="Skip any errors when extract imports info.")
+	parser.add_argument("-t", "--show-third-distribution", action="store_true", help="Show the files where third-party packages are imported.")
 	args = parser.parse_args()
+	assert os.path.isdir(args.Project)
 
 	imports_std, imports_self, imports_third = classify_imports(args.Project, ignore_dirs=args.ignore_dirs, follow_links=args.follow_links, ignore_error=args.ignore_error)
 	print("\nIMPORT STDLIB %d:\n\t" % len(imports_std), imports_std)
 	print("\nIMPORT SELF %d:\n\t" % len(imports_self), imports_self)
-	print("\nIMPORT THIRD %d:\n\t" % len(imports_third), imports_third)
+	print("\nIMPORT THIRD %d:\n\t" % len(imports_third), imports_third.keys())
+	if args.show_third_distribution:
+		print("="*10, "Third-party Package Distribution", "="*10)
+		for item in imports_third:
+			print("\n%s be imported in %d files:\n\t" % (item, len(imports_third[item])), imports_third[item])
