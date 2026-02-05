@@ -1,7 +1,0 @@
-archive_win_driver.py	Collect the latest version windows driver of devices from some dism export directories.
-check_chinese_id.py	Validate a People's Republic of China identity card number according to the validation rules.
-excel_auto_unmerge.py	Auto unmerge all the merged cells in xlsx file with specific style retain.
-ndjson2csv.py	Convert an NDJSON file to CSV format for analysis with office-like software.
-openvpn2to3cli.py	Combining the start command line of openvpn2.x to the .ovpn config file for openvpn3.
-parse_mp4_headers.py	Parse and show atoms of a mp4 file.
-python_project_packages_audit.py	Analyze a Python project, extract all imported packages, list the package names and classify.
